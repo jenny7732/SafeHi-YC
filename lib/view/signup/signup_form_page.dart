@@ -30,6 +30,9 @@ class _SignupFormPageState extends State<SignupFormPage> {
   bool _isObscurePassword = true;
   bool _isObscureConfirm = true;
 
+  bool? _isEmailAvailable; // 서버 응답 기준 중복 여부
+  String? _emailCheckMessage;
+
   @override
   void dispose() {
     _emailController.dispose();
@@ -90,11 +93,18 @@ class _SignupFormPageState extends State<SignupFormPage> {
                       SizedBox(height: responsive.sectionSpacing),
                       _buildEmailField(),
                       if (_isEmailChecked &&
+                          _isEmailAvailable == true &&
                           _validateEmail(_emailController.text))
                         _helperText('사용 가능한 이메일입니다.'),
+
                       if (_isEmailChecked &&
-                          !_validateEmail(_emailController.text))
-                        _helperText('올바른 이메일 형식이 아닙니다.', isError: true),
+                          (_isEmailAvailable == false ||
+                              !_validateEmail(_emailController.text)))
+                        _helperText(
+                          _emailCheckMessage ?? '이메일을 다시 확인해주세요.',
+                          isError: true,
+                        ),
+
                       _buildPasswordField(
                         '비밀번호',
                         _passwordController,
@@ -202,7 +212,17 @@ class _SignupFormPageState extends State<SignupFormPage> {
       controller: _emailController,
       keyboardType: TextInputType.emailAddress,
       suffixIcon: TextButton(
-        onPressed: () => setState(() => _isEmailChecked = true),
+        onPressed: () async {
+          final viewModel = context.read<SignupViewModel>();
+          final msg = await viewModel.checkEmail(_emailController.text);
+
+          setState(() {
+            _isEmailChecked = true;
+            _isEmailAvailable = viewModel.isEmailChecked;
+            _emailCheckMessage = msg;
+          });
+        },
+
         child: const Text('중복확인', style: TextStyle(color: Colors.grey)),
       ),
     );

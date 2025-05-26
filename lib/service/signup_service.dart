@@ -54,4 +54,34 @@ class SignupService {
     //   }
     // };
   }
+
+  Future<Map<String, dynamic>> checkEmailDuplicate(String email) async {
+    final url = Uri.parse('$baseUrl/db/email_check');
+    debugPrint('요청 URL: $url');
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'email': email}),
+      );
+
+      debugPrint('이메일 중복 확인 응답: ${response.body}');
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        return {
+          'status': false,
+          'msg': '이메일 중복 확인 실패: 서버 오류 (${response.statusCode})',
+        };
+      }
+    } catch (e) {
+      debugPrint('[예외 발생 - 이메일 중복 확인] $e');
+      return {
+        'status': false,
+        'msg': '이메일 중복 확인 중 오류가 발생했습니다.\n${e.toString()}',
+      };
+    }
+  }
 }

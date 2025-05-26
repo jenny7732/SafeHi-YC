@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:safehi_yc/provider/nav/bottom_nav_provider.dart';
 import 'package:safehi_yc/styles/app_colors.dart';
 import 'package:safehi_yc/view/login/login_page.dart';
 import 'package:safehi_yc/view/mypage/mypage_modify.dart';
@@ -29,6 +30,8 @@ class MyPage extends StatelessWidget {
                     context,
                     listen: false,
                   );
+                  // ✅ 탭 인덱스를 0으로 초기화
+                  context.read<BottomNavProvider>().setIndex(0);
                   await userVM.logout();
                   Navigator.pushAndRemoveUntil(
                     context,

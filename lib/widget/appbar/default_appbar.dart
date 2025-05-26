@@ -18,8 +18,7 @@ class DefaultAppBar extends StatelessWidget {
         children: [
           Expanded(
             child: Align(
-              alignment:
-                  title == "양청구청" ? Alignment.centerLeft : Alignment.center,
+              alignment: Alignment.center,
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -28,14 +27,12 @@ class DefaultAppBar extends StatelessWidget {
                     width: responsive.iconSize,
                     height: responsive.iconSize,
                   ),
-                  SizedBox(width: responsive.itemSpacing / 2),
+                  SizedBox(width: responsive.itemSpacing),
                   Text(
                     title,
                     style: TextStyle(
                       color:
-                          title == "안심하이"
-                              ? const Color(0xFFFB5457)
-                              : Colors.black,
+                          title == "양청구청" ? AppColors().primary : Colors.black,
                       fontWeight: FontWeight.bold,
                       fontSize: responsive.fontLarge,
                     ),

@@ -89,7 +89,7 @@ class _VisitFinishState extends State<VisitFinish> {
         child: BottomOneButton(
           buttonText: '기록 보러가기',
           onButtonTap: () {
-            context.read<BottomNavProvider>().setIndex(2);
+            context.read<BottomNavProvider>().setIndex(1);
             Navigator.pushAndRemoveUntil(
               context,
               MaterialPageRoute(builder: (_) => const MainScreen()),

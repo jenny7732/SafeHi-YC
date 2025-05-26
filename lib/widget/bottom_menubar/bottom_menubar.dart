@@ -28,10 +28,6 @@ class BottomMenubar extends StatelessWidget {
       items: const [
         BottomNavigationBarItem(icon: Icon(Icons.home_outlined), label: '홈'),
         BottomNavigationBarItem(
-          icon: Icon(Icons.list_alt_outlined),
-          label: '방문리스트',
-        ),
-        BottomNavigationBarItem(
           icon: Icon(Icons.history_outlined),
           label: '이전기록',
         ),

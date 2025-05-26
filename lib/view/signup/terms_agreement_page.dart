@@ -74,7 +74,7 @@ class _TermsAgreementPageState extends State<TermsAgreementPage> {
                         ),
                       ),
                       controlAffinity: ListTileControlAffinity.leading,
-                      activeColor: const Color(0xFFFB5457),
+                      activeColor: AppColors().primary,
                       contentPadding: EdgeInsets.zero,
                     ),
                     const Divider(),
@@ -143,7 +143,7 @@ class _TermsAgreementPageState extends State<TermsAgreementPage> {
       onChanged: onChanged,
       title: Text(title, style: TextStyle(fontSize: responsive.fontBase)),
       controlAffinity: ListTileControlAffinity.leading,
-      activeColor: const Color(0xFFFB5457),
+      activeColor: AppColors().primary,
       contentPadding: EdgeInsets.zero,
     );
   }

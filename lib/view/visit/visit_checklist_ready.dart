@@ -119,6 +119,7 @@ class _CheckListReadyState extends State<CheckListReady> {
   @override
   Widget build(BuildContext context) {
     final responsive = Responsive(context);
+    final TextEditingController _titleController = TextEditingController();
 
     return Scaffold(
       backgroundColor: AppColors().background,
@@ -158,11 +159,78 @@ class _CheckListReadyState extends State<CheckListReady> {
                           textAlign: TextAlign.center,
                         ),
                         SizedBox(height: responsive.sectionSpacing * 3),
-                        Image.asset(
-                          'assets/images/logo.png',
-                          width: responsive.isTablet ? 300 : 230,
-                          height: responsive.isTablet ? 300 : 230,
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors().primary.withOpacity(0.2),
+                                blurRadius: 10,
+                                spreadRadius: 3,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Center(
+                                child: Text(
+                                  'STT 제목을 입력해주세요',
+                                  style: TextStyle(
+                                    color: AppColors().primary,
+                                    fontSize: responsive.fontBase,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                              SizedBox(height: responsive.itemSpacing),
+
+                              // 입력 필드
+                              TextField(
+                                controller: _titleController,
+                                style: const TextStyle(color: Colors.black87),
+                                decoration: InputDecoration(
+                                  hintText: '예: 노인 민원 자막 안내',
+                                  hintStyle: const TextStyle(
+                                    color: Color(0xFFB3A5A5),
+                                  ),
+                                  prefixIcon: const Icon(
+                                    Icons.edit_note_rounded,
+                                    color: Color(0xFFB3A5A5),
+                                  ),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    vertical: 16,
+                                    horizontal: 16,
+                                  ),
+                                  filled: true,
+                                  fillColor: const Color(0xFFF9F9F9),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide.none,
+                                  ),
+                                ),
+                              ),
+
+                              SizedBox(height: responsive.itemSpacing * 0.7),
+
+                              // 안내 문구
+                              Center(
+                                child: Text(
+                                  '입력하지 않으면 기본 제목으로 저장됩니다.',
+                                  style: TextStyle(
+                                    fontSize: responsive.fontSmall,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
+
                         SizedBox(height: responsive.sectionSpacing * 2),
                       ],
                     ),

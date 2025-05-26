@@ -13,27 +13,28 @@ class DefaultBackAppBar extends StatelessWidget {
 
     return Container(
       color: AppColors().background,
-      padding: EdgeInsets.symmetric(horizontal: responsive.appbarHorizontal),
-      child: Row(
-        children: [
-          IconButton(
-            icon: const Icon(Icons.arrow_back),
-            iconSize: responsive.iconSize,
-            color: AppColors().primary,
-            onPressed: () {
-              Navigator.pop(context);
-            },
-          ),
-          Expanded(
-            child: Align(
-              alignment:
-                  title == "안심하이" ? Alignment.centerLeft : Alignment.center,
+      padding: EdgeInsets.symmetric(vertical: responsive.itemSpacing),
+      child: SizedBox(
+        height: responsive.iconSize + 12,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            // ✅ 왼쪽 뒤로가기 버튼
+            Positioned(
+              left: 0,
+              child: IconButton(
+                icon: const Icon(Icons.arrow_back),
+                iconSize: responsive.iconSize,
+                color: AppColors().primary,
+                padding: const EdgeInsets.only(left: 4),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ),
+
+            // ✅ 가운데 로고 + 제목
+            Center(
               child: Row(
                 mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment:
-                    title == "안심하이"
-                        ? MainAxisAlignment.start
-                        : MainAxisAlignment.center,
                 children: [
                   Transform.translate(
                     offset: const Offset(0, 3),
@@ -44,14 +45,11 @@ class DefaultBackAppBar extends StatelessWidget {
                       fit: BoxFit.contain,
                     ),
                   ),
-                  SizedBox(width: responsive.itemSpacing / 2),
+                  SizedBox(width: responsive.itemSpacing),
                   Text(
                     title,
                     style: TextStyle(
-                      color:
-                          title == "안심하이"
-                              ? const Color(0xFFFB5457)
-                              : Colors.black,
+                      color: Colors.black,
                       fontWeight: FontWeight.bold,
                       fontSize: responsive.fontLarge,
                     ),
@@ -59,10 +57,8 @@ class DefaultBackAppBar extends StatelessWidget {
                 ],
               ),
             ),
-          ),
-          if (title != "안심하이")
-            SizedBox(width: responsive.iconSize + responsive.itemSpacing),
-        ],
+          ],
+        ),
       ),
     );
   }

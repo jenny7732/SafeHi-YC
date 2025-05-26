@@ -12,7 +12,6 @@ class BottomNavProvider extends ChangeNotifier {
   final List<Widget Function()> pageBuilders = [
     () => const HomePage(),
     () => const PreviousRecordsPage(),
-    () => const PreviousRecordsPage(),
     () => const MyPage(),
   ];
 

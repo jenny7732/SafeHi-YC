@@ -6,10 +6,17 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter/foundation.dart';
 import 'package:safehi_yc/main_screen.dart';
 import 'package:safehi_yc/provider/nav/bottom_nav_provider.dart';
+import 'package:safehi_yc/repository/visit_summary_repository.dart';
 import 'package:safehi_yc/service/user_service.dart';
+import 'package:safehi_yc/service/visit_summary_service.dart';
 import 'package:safehi_yc/util/connectivity.dart';
 import 'package:safehi_yc/view/login/login_page.dart';
+import 'package:safehi_yc/view_model/stt_result_view_model.dart';
 import 'package:safehi_yc/view_model/user_view_model.dart';
+import 'package:safehi_yc/repository/visit_repository.dart';
+import 'package:safehi_yc/service/visit_service.dart';
+import 'package:safehi_yc/view_model/visit_summary_view_model.dart';
+import 'package:safehi_yc/view_model/visit_view_model.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -30,6 +37,27 @@ void main() async {
         providers: [
           ChangeNotifierProvider<UserViewModel>.value(value: userVM),
           ChangeNotifierProvider(create: (_) => BottomNavProvider()),
+          ChangeNotifierProvider(
+            create:
+                (_) => VisitUploadViewModel(
+                  repository: VisitRepository(service: VisitService()),
+                ),
+          ),
+          ChangeNotifierProvider(
+            create:
+                (_) => VisitSummaryViewModel(
+                  repository: VisitSummaryRepository(
+                    service: VisitSummaryService(),
+                  ),
+                ),
+          ),
+
+          ChangeNotifierProvider(
+            create:
+                (_) => SttResultViewModel(
+                  repository: VisitRepository(service: VisitService()),
+                )..fetchResults(), // ✅ 생성과 동시에 fetch 호출
+          ),
         ],
         child: const MyApp(),
       ),

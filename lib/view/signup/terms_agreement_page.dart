@@ -36,14 +36,14 @@ class _TermsAgreementPageState extends State<TermsAgreementPage> {
     return Scaffold(
       backgroundColor: AppColors().background,
       body: SafeArea(
-        child: Column(
-          children: [
-            const DefaultBackAppBar(title: '약관 동의'),
-            Expanded(
-              child: Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: responsive.paddingHorizontal,
-                ),
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: responsive.paddingHorizontal,
+          ),
+          child: Column(
+            children: [
+              const DefaultBackAppBar(title: '약관 동의'),
+              Expanded(
                 child: Column(
                   children: [
                     SizedBox(height: responsive.sectionSpacing),
@@ -104,8 +104,8 @@ class _TermsAgreementPageState extends State<TermsAgreementPage> {
                   ],
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
       bottomNavigationBar: Padding(

@@ -27,17 +27,17 @@ class _VisitFinishState extends State<VisitFinish> {
     return Scaffold(
       backgroundColor: AppColors().background,
       body: SafeArea(
-        child: Column(
-          children: [
-            const DefaultBackAppBar(title: '실시간 대화'),
-            Expanded(
-              child: Center(
-                child: SingleChildScrollView(
-                  physics: const BouncingScrollPhysics(),
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: responsive.paddingHorizontal,
-                    ),
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: responsive.paddingHorizontal,
+          ),
+          child: Column(
+            children: [
+              const DefaultBackAppBar(title: '실시간 대화'),
+              Expanded(
+                child: Center(
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -78,8 +78,8 @@ class _VisitFinishState extends State<VisitFinish> {
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
 

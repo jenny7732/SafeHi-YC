@@ -32,7 +32,7 @@ class DefaultAppBar extends StatelessWidget {
                     title,
                     style: TextStyle(
                       color:
-                          title == "양청구청" ? AppColors().primary : Colors.black,
+                          title == "양천구청" ? AppColors().primary : Colors.black,
                       fontWeight: FontWeight.bold,
                       fontSize: responsive.fontLarge,
                     ),

@@ -68,4 +68,9 @@ class WebSocketService {
     _channel = null;
     _broadcastStream = null;
   }
+
+  // meta data 보내는 함수
+  void send(String message) {
+    _channel?.sink.add(message);
+  }
 }

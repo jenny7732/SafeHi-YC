@@ -35,7 +35,7 @@ class _HomePageState extends State<HomePage> {
           ),
           child: Column(
             children: [
-              const DefaultAppBar(title: '양청구청'),
+              const DefaultAppBar(title: '양천구청'),
 
               // 화면 높이 중앙 배치
               Expanded(
@@ -82,7 +82,7 @@ class _HomePageState extends State<HomePage> {
                             const SizedBox(width: 12),
                             Expanded(
                               child: Text(
-                                '양청구청 STT 자막 서비스를 시작해볼까요?',
+                                '양천구청 STT 자막 서비스를 시작해볼까요?',
                                 style: TextStyle(
                                   fontSize: responsive.fontBase,
                                   fontWeight: FontWeight.w600,

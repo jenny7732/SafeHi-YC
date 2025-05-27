@@ -1,78 +1,45 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:safehi_yc/service/audio_service.dart';
 import 'package:safehi_yc/service/websocket_service.dart';
 import 'package:safehi_yc/styles/app_colors.dart';
 import 'package:safehi_yc/util/responsive.dart';
 import 'package:safehi_yc/view/visit/visit_finish.dart';
+import 'package:safehi_yc/view_model/user_view_model.dart';
 import 'package:safehi_yc/widget/appbar/default_back_appbar.dart';
 import 'package:safehi_yc/widget/button/bottom_one_btn.dart';
-import 'package:safehi_yc/widget/button/bottom_two_btn.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
+import 'package:provider/provider.dart';
 
 class VisitProcess extends StatefulWidget {
-  final WebSocketService ws;
-  final AudioWebSocketRecorder audio;
+  final int reportId;
 
-  const VisitProcess({super.key, required this.ws, required this.audio});
+  const VisitProcess({super.key, required this.reportId});
 
   @override
-  VisitProcessState createState() => VisitProcessState();
+  State<VisitProcess> createState() => _VisitProcessState();
 }
 
-class VisitProcessState extends State<VisitProcess>
+class _VisitProcessState extends State<VisitProcess>
     with SingleTickerProviderStateMixin {
   final List<String> _sttTexts = [];
   final ScrollController _scrollController = ScrollController();
 
+  final WebSocketService _ws = WebSocketService();
+  late final AudioWebSocketRecorder _audio;
+
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
-  bool _isReconnectDialogVisible = false;
 
-  StreamSubscription? _wsSub; // 현재 listen 보관
-  bool _reconnecting = false; // 중복 재시도 방지
-
-  Timer? _noAudioTimer;
-  bool _hasReceivedAudio = false;
-
-  void _startNoAudioTimer() {
-    _noAudioTimer = Timer(const Duration(seconds: 10), () {
-      if (!_hasReceivedAudio && mounted) {
-        _showNoAudioDialog();
-      }
-    });
-  }
+  StreamSubscription? _wsSub;
 
   @override
   void initState() {
     super.initState();
     WakelockPlus.enable();
-
-    // WebSocket 연결 끊김 감지
-    widget.ws.onErrorCallback = (error) {
-      _showDialog('서버 오류', '서버와의 연결 중 오류가 발생했어요.\n네트워크 상태를 확인해 주세요.');
-    };
-
-    widget.ws.onDoneCallback = () {
-      _showDialog('서버 연결 종료', '서버와의 연결이 종료되었어요.\n잠시 후 다시 시도해 주세요.');
-    };
-
-    _hasReceivedAudio = true;
-    widget.ws.stream?.listen((message) {
-      setState(() {
-        _sttTexts.add(message.toString());
-      });
-
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (_scrollController.hasClients) {
-          _scrollController.animateTo(
-            _scrollController.position.maxScrollExtent,
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeOut,
-          );
-        }
-      });
-    });
+    _audio = AudioWebSocketRecorder(ws: _ws);
+    _setupConnection();
 
     _pulseController = AnimationController(
       vsync: this,
@@ -84,107 +51,27 @@ class VisitProcessState extends State<VisitProcess>
     );
   }
 
-  @override
-  void dispose() {
-    _pulseController.dispose();
-    _scrollController.dispose();
-    super.dispose();
-  }
+  Future<void> _setupConnection() async {
+    try {
+      await _ws.connect('ws://211.188.55.88:8085');
+      debugPrint('✅ 서버 연결 성공');
 
-  void _showNoAudioDialog() {
-    showDialog(
-      context: context,
-      builder:
-          (_) => AlertDialog(
-            title: const Text('음성 데이터 없음'),
-            content: const Text(
-              '10초 동안 음성이 수신되지 않았어요.\n\n'
-              '말씀이 없으신 경우에는 걱정하지 않으셔도 되고,\n'
-              '혹시 계속 말씀 중인데도 반응이 없다면\n'
-              '네트워크 환경(방화벽, 프록시 등)을 확인해 주세요.',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
-                child: const Text('확인'),
-              ),
-            ],
-          ),
-    );
-  }
+      final email = context.read<UserViewModel>().user?.email ?? 'unknown';
+      final metadata = {'reportid': widget.reportId, 'email': email};
+      _ws.sendMessage(jsonEncode(metadata));
+      debugPrint('[✅ 메타데이터 전송] $metadata');
 
-  void _showDialog(String title, String message) {
-    if (!mounted) return;
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder:
-          (_) => AlertDialog(
-            title: const Text('서버 연결 종료'),
-            content: const Text('서버와의 연결이 끊어졌습니다.\n다시 연결을 시도하시겠어요?'),
-            actions: [
-              TextButton(
-                onPressed: () async {
-                  Navigator.of(context).pop();
-
-                  await _tryReconnect();
-                },
-                child: const Text('확인 후 다시 연결'),
-              ),
-            ],
-          ),
-    );
-  }
-
-  Future<void> _tryReconnect() async {
-    if (_reconnecting) return; // 동시에 두 번 못 들어오게
-    _reconnecting = true;
-
-    // 0) 기존 세션 정리
-    _wsSub?.cancel();
-    await widget.audio.stopRecording(); // 🎙 녹음 확실히 중단
-    widget.ws.disconnect();
-
-    // 1) 최대 3회 재시도
-    const url = 'ws://211.188.55.88:8085';
-    bool ok = false;
-    for (int i = 0; i < 3 && !ok; i++) {
-      try {
-        await widget.ws.connect(url); // 소켓 열기
-        ok = true;
-      } catch (_) {
-        await Future.delayed(const Duration(seconds: 2));
-      }
-    }
-
-    if (!ok) {
-      _reconnecting = false;
-      if (mounted) _showReconnectDialog(); // 다시‑시도 팝업
-      return;
-    }
-
-    // 2) 새로 listen 등록 (이전에 cancel 했으므로 안전)
-    _wsSub = widget.ws.stream?.listen(
-      (msg) {
-        setState(() => _sttTexts.add(msg.toString()));
+      _wsSub = _ws.stream?.listen((message) {
+        setState(() => _sttTexts.add(message.toString()));
         _scrollToBottom();
-      },
-      onError: (err) {
-        if (mounted) _showReconnectDialog();
-      },
-      onDone: () {
-        if (mounted) _showReconnectDialog();
-      },
-      cancelOnError: true,
-    );
+      });
 
-    // 3) 녹음 재시작
-    await widget.audio.startRecording();
-
-    _reconnecting = false;
+      await _audio.initRecorder();
+      await _audio.startRecording();
+    } catch (e) {
+      debugPrint('[WebSocket 오류] $e');
+      _showDialog('오류 발생', e.toString());
+    }
   }
 
   void _scrollToBottom() {
@@ -199,36 +86,32 @@ class VisitProcessState extends State<VisitProcess>
     });
   }
 
-  void _showReconnectDialog() {
-    if (_isReconnectDialogVisible) return;
-    _isReconnectDialogVisible = true;
-
+  void _showDialog(String title, String message) {
+    if (!mounted) return;
     showDialog(
       context: context,
-      barrierDismissible: false,
       builder:
           (_) => AlertDialog(
-            title: const Text('서버 연결 끊김'),
-            content: const Text('서버와의 연결이 끊어졌습니다.\n다시 연결하시겠어요?'),
+            title: Text(title),
+            content: Text(message),
             actions: [
               TextButton(
-                onPressed: () {
-                  Navigator.of(context, rootNavigator: true).pop();
-                  _isReconnectDialogVisible = false;
-
-                  // 팝업 닫힌 다음 프레임에서 다시 재시도
-                  WidgetsBinding.instance.addPostFrameCallback((_) async {
-                    await Future.delayed(
-                      const Duration(milliseconds: 200),
-                    ); // 💡 약간의 여유 줌
-                    await _tryReconnect(); // 실패하면 다시 showReconnectDialog 호출됨
-                  });
-                },
-                child: const Text('확인 후 다시 연결'),
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('확인'),
               ),
             ],
           ),
     );
+  }
+
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    _scrollController.dispose();
+    _wsSub?.cancel();
+    _audio.dispose();
+    _ws.disconnect();
+    super.dispose();
   }
 
   @override
@@ -238,91 +121,96 @@ class VisitProcessState extends State<VisitProcess>
     return Scaffold(
       backgroundColor: AppColors().background,
       body: SafeArea(
-        child: Column(
-          children: [
-            const DefaultBackAppBar(title: '실시간 대화'),
-            Expanded(
-              child: Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: responsive.paddingHorizontal,
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    ScaleTransition(
-                      scale: _pulseAnimation,
-                      child: Container(
-                        padding: EdgeInsets.all(responsive.itemSpacing),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [Colors.red.shade100, AppColors().primary],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: responsive.paddingHorizontal,
+          ),
+          child: Column(
+            children: [
+              const DefaultBackAppBar(title: '실시간 대화'),
+              Expanded(
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      ScaleTransition(
+                        scale: _pulseAnimation,
+                        child: Container(
+                          padding: EdgeInsets.all(responsive.itemSpacing),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                Colors.red.shade100,
+                                AppColors().primary,
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors().primary.withOpacity(0.3),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
                           ),
-                          shape: BoxShape.circle,
+                          child: Icon(
+                            Icons.mic,
+                            color: Colors.white,
+                            size: responsive.iconSize,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        '어르신의 말씀을 하나하나 담고 있어요 :)',
+                        style: TextStyle(
+                          color: AppColors().primary,
+                          fontSize: responsive.fontBase + 1,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      Container(
+                        constraints: BoxConstraints(
+                          maxHeight: responsive.screenHeight * 0.45,
+                          minHeight: responsive.screenHeight * 0.45,
+                        ),
+                        padding: EdgeInsets.symmetric(
+                          vertical: responsive.itemSpacing,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(28),
                           boxShadow: [
                             BoxShadow(
-                              color: AppColors().primary.withOpacity(0.3),
+                              color: Colors.black.withOpacity(0.08),
                               blurRadius: 12,
-                              offset: const Offset(0, 4),
+                              offset: const Offset(0, 6),
                             ),
                           ],
                         ),
-                        child: Icon(
-                          Icons.mic,
-                          color: Colors.white,
-                          size: responsive.iconSize,
-                        ),
-                      ),
-                    ),
-                    SizedBox(height: responsive.itemSpacing),
-                    Text(
-                      '어르신의 말씀을 하나하나 담고 있어요 :)',
-                      style: TextStyle(
-                        color: AppColors().primary,
-                        fontSize: responsive.fontBase + 1,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    SizedBox(height: responsive.sectionSpacing),
-                    Container(
-                      constraints: BoxConstraints(
-                        maxHeight: responsive.screenHeight * 0.45,
-                        minHeight: responsive.screenHeight * 0.45,
-                      ),
-                      padding: EdgeInsets.symmetric(
-                        vertical: responsive.itemSpacing,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(28),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.08),
-                            blurRadius: 12,
-                            offset: const Offset(0, 6),
+                        child: ListView.separated(
+                          controller: _scrollController,
+                          itemCount: _sttTexts.length,
+                          padding: EdgeInsets.symmetric(
+                            horizontal: responsive.itemSpacing,
                           ),
-                        ],
-                      ),
-                      child: ListView.separated(
-                        controller: _scrollController,
-                        shrinkWrap: true,
-                        padding: EdgeInsets.symmetric(
-                          horizontal: responsive.itemSpacing,
+                          separatorBuilder:
+                              (_, __) =>
+                                  SizedBox(height: responsive.itemSpacing),
+                          itemBuilder:
+                              (context, index) =>
+                                  _buildBubble(_sttTexts[index], responsive),
                         ),
-                        itemCount: _sttTexts.length,
-                        separatorBuilder:
-                            (_, __) => SizedBox(height: responsive.itemSpacing),
-                        itemBuilder:
-                            (context, index) =>
-                                _buildBubble(_sttTexts[index], responsive),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
       bottomNavigationBar: Padding(
@@ -331,8 +219,8 @@ class VisitProcessState extends State<VisitProcess>
           buttonText: '종료',
           onButtonTap: () async {
             WakelockPlus.disable();
-            await widget.audio.stopRecording();
-            widget.ws.disconnect();
+            await _audio.stopRecording();
+            _ws.disconnect();
 
             if (!mounted) return;
             Navigator.push(

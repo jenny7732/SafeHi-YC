@@ -131,7 +131,9 @@ class ReportService {
   }
 
   Future<String> getConversationText(int reportId) async {
-    final url = Uri.parse('$baseUrl/db/getConverstationSTTtxt/$reportId');
+    final url = Uri.parse(
+      '$baseUrl/db/getYangChunConverstationSTTtxt/$reportId',
+    );
     final headers = await buildAuthHeaders();
 
     final response = await http.get(url, headers: headers);

@@ -7,15 +7,15 @@ import 'websocket_service.dart';
 
 class AudioWebSocketRecorder {
   final FlutterSoundRecorder _recorder = FlutterSoundRecorder();
-  final WebSocketService ws; // 각 Recorder마다 다른 ws 인스턴스 가능
+  final WebSocketService ws;
 
   bool _isRecording = false;
-  StreamSubscription<Uint8List>? _recorderSubscription;
+  StreamController<Uint8List>? _streamController;
+  StreamSubscription<Uint8List>? _subscription;
 
-  // 생성자에서 WebSocketService를 주입
   AudioWebSocketRecorder({required this.ws});
 
-  // 1) 초기화
+  // 1) 마이크 권한 및 초기화
   Future<void> initRecorder() async {
     final status = await Permission.microphone.request();
     debugPrint('🎤 마이크 권한 상태: $status');
@@ -28,29 +28,31 @@ class AudioWebSocketRecorder {
     debugPrint('🎤 마이크 열기 성공');
   }
 
-  // 2) 녹음 시작 + WebSocket 전송 (raw binary)
+  // 2) 녹음 시작
   Future<void> startRecording() async {
     if (_isRecording) {
       debugPrint('이미 녹음 중입니다.');
       return;
     }
-    final streamController = StreamController<Uint8List>();
+
+    _streamController = StreamController<Uint8List>();
 
     await _recorder.startRecorder(
-      toStream: streamController.sink,
+      toStream: _streamController!.sink,
       codec: Codec.pcm16,
       sampleRate: 16000,
       numChannels: 1,
-      bitRate: 16 * 1000,
       audioSource: AudioSource.microphone,
     );
 
-    _recorderSubscription = streamController.stream.listen((audioBytes) {
-      ws.sendBinary(audioBytes);
+    _subscription = _streamController!.stream.listen((audioBytes) {
+      if (audioBytes.isNotEmpty) {
+        ws.sendBinary(audioBytes);
+      }
     });
 
     _isRecording = true;
-    debugPrint('오디오 녹음 & WebSocket 전송 시작');
+    debugPrint('🎙️ 오디오 녹음 & WebSocket 전송 시작');
   }
 
   // 3) 녹음 중지
@@ -58,20 +60,23 @@ class AudioWebSocketRecorder {
     if (!_isRecording) return;
     _isRecording = false;
 
-    await _recorderSubscription?.cancel();
-    _recorderSubscription = null;
+    await _subscription?.cancel();
+    await _streamController?.close();
+    _subscription = null;
+    _streamController = null;
 
     try {
       await _recorder.stopRecorder();
-      debugPrint('오디오 녹음 중지');
+      debugPrint('🛑 오디오 녹음 중지');
     } catch (e) {
-      debugPrint('오디오 녹음 중지 오류: $e');
+      debugPrint('❌ 오디오 녹음 중지 오류: $e');
     }
   }
 
-  // 4) dispose
+  // 4) 정리
   Future<void> dispose() async {
     await stopRecording();
     await _recorder.closeRecorder();
+    debugPrint('🧹 마이크 정리 완료');
   }
 }

@@ -1,52 +1,14 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
-import 'package:http_parser/http_parser.dart';
-import 'package:path/path.dart' as path;
+import 'package:safehi_yc/model/stt_result_model.dart';
 import 'package:safehi_yc/model/visit_detail_model.dart';
 import 'package:safehi_yc/model/visit_model.dart';
 import 'package:safehi_yc/util/http_helper.dart';
 
 class VisitService {
   final baseUrl = dotenv.env['BASE_URL']!;
-
-  /// 홈 : 오늘 방문 대상자 리스트
-  static Future<List<Visit>> fetchTodayVisits() async {
-    final headers = await buildAuthHeaders(); // ✅ 토큰 헤더 추가
-    final baseUrl = dotenv.env['BASE_URL']!;
-
-    final response = await http.get(
-      Uri.parse('$baseUrl/db/getTodayList'),
-      headers: headers,
-    );
-
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      final List<dynamic> data = jsonDecode(response.body);
-      return data.map((e) => Visit.fromJson(e)).toList();
-    } else {
-      throw Exception('Failed to load schedule list');
-    }
-  }
-
-  /// 특정 날짜 방문 대상자 가져오기
-  static Future<List<Visit>> fetchVisitsByDate(String date) async {
-    final headers = await buildAuthHeaders(); // ✅ 토큰 헤더 추가
-    final baseUrl = dotenv.env['BASE_URL']!;
-
-    final response = await http.get(
-      Uri.parse('$baseUrl/visits?date=$date'),
-      headers: headers,
-    );
-
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      final List<dynamic> data = jsonDecode(response.body);
-      return data.map((e) => Visit.fromJson(e)).toList();
-    } else {
-      throw Exception('Failed to load visits for $date');
-    }
-  }
 
   /// 특정 방문 대상자 기본 정보 조회
   static Future<Visit> fetchVisitDetail(int targetId) async {
@@ -84,51 +46,62 @@ class VisitService {
     }
   }
 
-  Future<void> uploadCallRecord({
-    required int reportId,
-    required File audioFile,
-  }) async {
-    final uri = Uri.parse('$baseUrl/db/uploadCallRecord');
-    final request = http.MultipartRequest('POST', uri);
+  // stt 제목 post 요청
+  Future<Map<String, dynamic>> uploadSttTitle(String title) async {
+    final url = Uri.parse('$baseUrl/db/yangchun_stt_upload');
     final headers = await buildAuthHeaders();
 
-    request.headers.addAll(headers);
-    request.fields['reportid'] = reportId.toString();
+    final body = {'stt_file_name': title};
 
-    // 🔥 여기 수정: 파일 확장자 직접 확인
-    final ext = path.extension(audioFile.path).toLowerCase();
-    String? mimeSubtype;
-
-    if (ext == '.wav') {
-      mimeSubtype = 'wav';
-    } else if (ext == '.mp3') {
-      mimeSubtype = 'mpeg';
-    } else if (ext == '.m4a') {
-      mimeSubtype = 'x-m4a';
-    } else if (ext == '.webm') {
-      mimeSubtype = 'webm';
-    } else {
-      // ❗ 확장자가 없으면 기본으로 mp3로 가정
-      mimeSubtype = 'mp3';
-      debugPrint('확장자 없음 → 기본으로 audio/mpeg으로 설정');
-    }
-
-    request.files.add(
-      await http.MultipartFile.fromPath(
-        'audiofile',
-        audioFile.path,
-        filename:
-            '${path.basename(audioFile.path)}${ext.isEmpty ? '.mp3' : ''}', // 확장자 보장
-        contentType: MediaType('audio', mimeSubtype),
-      ),
+    final response = await http.post(
+      url,
+      headers: headers,
+      body: jsonEncode(body),
     );
 
-    final response = await http.Response.fromStream(await request.send());
+    final result = jsonDecode(utf8.decode(response.bodyBytes));
+    debugPrint('[STT 제목 업로드 응답] $result');
 
-    debugPrint('[녹음 파일 업로드 응답] ${response.statusCode} - ${response.body}');
+    if (response.statusCode != 200 || result['status'] != true) {
+      throw Exception(result['msg'] ?? '서버 오류 발생');
+    }
+
+    return result; // ✅ 변경된 부분
+  }
+
+  Future<List<SttResult>> fetchSttResultList() async {
+    final headers = await buildAuthHeaders();
+    final url = Uri.parse('$baseUrl/db/yangchun_getResultList');
+
+    final response = await http.get(url, headers: headers);
+    debugPrint('response body: ${response.body}');
 
     if (response.statusCode != 200) {
-      throw Exception('녹음 파일 업로드 실패: ${response.statusCode}');
+      throw Exception('STT 결과 리스트 요청 실패: ${response.statusCode}');
+    }
+
+    final decoded = jsonDecode(utf8.decode(response.bodyBytes));
+
+    // ✅ 응답이 리스트 그 자체임
+    if (decoded is! List) {
+      throw Exception('예상하지 못한 응답 형식입니다. List가 아님');
+    }
+
+    return decoded.map((e) => SttResult.fromJson(e)).toList();
+  }
+
+  Future<String> getConversationText(int reportId) async {
+    final url = Uri.parse(
+      '$baseUrl/db/getYangChunConverstationSTTtxt/$reportId',
+    );
+    final headers = await buildAuthHeaders();
+
+    final response = await http.get(url, headers: headers);
+
+    if (response.statusCode == 200) {
+      return response.body;
+    } else {
+      throw Exception('상담 텍스트 불러오기 실패: ${response.statusCode}');
     }
   }
 }

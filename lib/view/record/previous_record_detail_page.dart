@@ -1,18 +1,49 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:safehi_yc/styles/app_colors.dart';
 import 'package:safehi_yc/util/responsive.dart';
 import 'package:safehi_yc/view/record/record_summary_page.dart';
 import 'package:safehi_yc/widget/appbar/default_back_appbar.dart';
 import 'package:safehi_yc/widget/button/bottom_two_btn.dart';
+import 'package:safehi_yc/view_model/visit_view_model.dart';
 
-class PreviousRecordDetailPage extends StatelessWidget {
+class PreviousRecordDetailPage extends StatefulWidget {
   final int targetId;
+  final String sttTitle;
+  final String startTime;
 
-  const PreviousRecordDetailPage({super.key, required this.targetId});
+  const PreviousRecordDetailPage({
+    super.key,
+    required this.targetId,
+    required this.sttTitle,
+    required this.startTime,
+  });
+
+  @override
+  State<PreviousRecordDetailPage> createState() =>
+      _PreviousRecordDetailPageState();
+}
+
+class _PreviousRecordDetailPageState extends State<PreviousRecordDetailPage> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<VisitUploadViewModel>().fetchConversationText(
+        widget.targetId,
+      );
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final responsive = Responsive(context);
+    final vm = context.watch<VisitUploadViewModel>();
+    final date = widget.startTime.split(' ')[0].replaceAll('-', '.');
+    final time =
+        widget.startTime.split(' ').length > 1
+            ? widget.startTime.split(' ')[1].substring(0, 5)
+            : '';
 
     return Scaffold(
       backgroundColor: AppColors().background,
@@ -27,7 +58,7 @@ class PreviousRecordDetailPage extends StatelessWidget {
               const DefaultBackAppBar(title: '상세 보기'),
               SizedBox(height: responsive.sectionSpacing),
 
-              /// 프로필 카드
+              /// STT 카드
               Container(
                 padding: EdgeInsets.all(responsive.cardSpacing),
                 decoration: BoxDecoration(
@@ -45,7 +76,7 @@ class PreviousRecordDetailPage extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      "STT 제목",
+                      widget.sttTitle,
                       style: TextStyle(
                         fontSize: responsive.fontLarge,
                         fontWeight: FontWeight.bold,
@@ -55,14 +86,14 @@ class PreviousRecordDetailPage extends StatelessWidget {
                     SizedBox(height: responsive.itemSpacing),
                     _buildDetailRow(
                       '날짜',
-                      "2024-05-01",
+                      date,
                       Icons.calendar_month_rounded,
                       responsive,
                     ),
                     SizedBox(height: responsive.itemSpacing),
                     _buildDetailRow(
-                      '시간',
-                      "15:00",
+                      '시작 시각',
+                      time,
                       Icons.punch_clock_rounded,
                       responsive,
                     ),
@@ -98,22 +129,19 @@ class PreviousRecordDetailPage extends StatelessWidget {
                         ),
                       ],
                     ),
-                    child: Text(
-                      '''안녕하세요, 오늘은 서울시 복지 혜택에 대해 안내드렸습니다.
-
-- 대상자는 기존 기초연금 수급자이며, 금년부터 에너지바우처 대상자에 해당됩니다.
-- 주소 이전 관련 행정 절차도 문의하였으며, 구청 내 민원실에서 처리할 수 있도록 안내했습니다.
-- 청각장애로 인해 민원소통이 어려운 부분을 STT 자막으로 충분히 보완하였습니다.
-
-상담을 마무리하며, 다음 방문 시에도 동일한 방식으로 소통 예정입니다.
-
-''',
-                      style: TextStyle(
-                        fontSize: responsive.fontSmall,
-                        height: 1.6,
-                        color: Colors.black87,
-                      ),
-                    ),
+                    child:
+                        vm.conversationText == null
+                            ? const Center(child: CircularProgressIndicator())
+                            : Text(
+                              vm.conversationText!.isEmpty
+                                  ? '내용이 없습니다.'
+                                  : vm.conversationText!,
+                              style: TextStyle(
+                                fontSize: responsive.fontSmall,
+                                height: 1.6,
+                                color: Colors.black87,
+                              ),
+                            ),
                   ),
                 ),
               ),
@@ -126,14 +154,12 @@ class PreviousRecordDetailPage extends StatelessWidget {
         child: BottomTwoButton(
           buttonText1: '이전',
           buttonText2: '요약된 내용 보러가기',
-          onButtonTap1: () {
-            Navigator.pop(context);
-          },
-          onButtonTap2: () async {
+          onButtonTap1: () => Navigator.pop(context),
+          onButtonTap2: () {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => RecordSummaryPage(targetId: targetId),
+                builder: (_) => RecordSummaryPage(targetId: widget.targetId),
               ),
             );
           },
@@ -152,7 +178,7 @@ class PreviousRecordDetailPage extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Icon(icon, size: 18, color: AppColors().primary),
-        SizedBox(width: 8),
+        const SizedBox(width: 8),
         Text(
           '$label: ',
           style: TextStyle(

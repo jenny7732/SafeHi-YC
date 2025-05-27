@@ -46,6 +46,7 @@ class _SignupFormPageState extends State<SignupFormPage> {
 
   bool get _isFormValid {
     return _isEmailChecked &&
+        _isEmailAvailable == true &&
         _validateEmail(_emailController.text) &&
         _validatePassword(_passwordController.text) == null &&
         _passwordController.text == _confirmPasswordController.text &&
@@ -79,14 +80,14 @@ class _SignupFormPageState extends State<SignupFormPage> {
     return Scaffold(
       backgroundColor: AppColors().background,
       body: SafeArea(
-        child: Column(
-          children: [
-            DefaultBackAppBar(title: '회원 가입'),
-            Expanded(
-              child: Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: responsive.paddingHorizontal,
-                ),
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: responsive.paddingHorizontal,
+          ),
+          child: Column(
+            children: [
+              DefaultBackAppBar(title: '회원 가입'),
+              Expanded(
                 child: SingleChildScrollView(
                   child: Column(
                     children: [
@@ -151,8 +152,8 @@ class _SignupFormPageState extends State<SignupFormPage> {
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
       bottomNavigationBar: Padding(
@@ -182,9 +183,69 @@ class _SignupFormPageState extends State<SignupFormPage> {
               final msg = result['msg'] as String;
 
               if (success) {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (_) => const LoginPage()),
+                await showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  builder:
+                      (_) => Dialog(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        backgroundColor: AppColors().background,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 32,
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.check_circle_outline,
+                                color: AppColors().primary,
+                                size: 48,
+                              ),
+                              const SizedBox(height: 16),
+                              const Text(
+                                '회원가입이 완료되었습니다!',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const SizedBox(height: 24),
+                              SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton(
+                                  onPressed: () {
+                                    Navigator.pop(context); // 팝업 닫기
+                                    Navigator.pushReplacement(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => const LoginPage(),
+                                      ),
+                                    );
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppColors().primary,
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 14,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                  ),
+                                  child: const Text(
+                                    '확인',
+                                    style: TextStyle(color: Colors.white),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                 );
               } else {
                 showErrorDialog(context, msg);
@@ -366,7 +427,7 @@ class _SignupFormPageState extends State<SignupFormPage> {
           value: value,
           groupValue: _gender,
           onChanged: (val) => setState(() => _gender = val!),
-          activeColor: AppColors().primary,
+          activeColor: Colors.red,
         ),
         Text(value),
       ],
@@ -379,9 +440,7 @@ class _SignupFormPageState extends State<SignupFormPage> {
       TextSpan(
         text: label,
         style: TextStyle(fontSize: responsive.fontM),
-        children: [
-          TextSpan(text: ' *', style: TextStyle(color: AppColors().primary)),
-        ],
+        children: [TextSpan(text: ' *', style: TextStyle(color: Colors.red))],
       ),
     );
   }
@@ -395,13 +454,13 @@ class _SignupFormPageState extends State<SignupFormPage> {
           Icon(
             isError ? Icons.close : Icons.check,
             size: responsive.fontSmall,
-            color: isError ? AppColors().primary : Colors.green,
+            color: isError ? Colors.red : Colors.green,
           ),
           const SizedBox(width: 4),
           Text(
             message,
             style: TextStyle(
-              color: isError ? AppColors().primary : Colors.green,
+              color: isError ? Colors.red : Colors.green,
               fontSize: responsive.fontSmall,
             ),
           ),

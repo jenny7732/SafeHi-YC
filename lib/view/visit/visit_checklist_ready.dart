@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:safehi_yc/service/audio_service.dart';
-import 'dart:io';
-
-import 'package:safehi_yc/service/websocket_service.dart';
+import 'package:provider/provider.dart';
 import 'package:safehi_yc/styles/app_colors.dart';
 import 'package:safehi_yc/util/responsive.dart';
 import 'package:safehi_yc/view/visit/visit_process.dart';
+import 'package:safehi_yc/view_model/visit_view_model.dart';
 import 'package:safehi_yc/widget/appbar/default_back_appbar.dart';
 import 'package:safehi_yc/widget/button/bottom_one_btn.dart';
 
@@ -17,286 +15,177 @@ class CheckListReady extends StatefulWidget {
 }
 
 class _CheckListReadyState extends State<CheckListReady> {
-  // 싱글톤이 아닌 인스턴스
-  late final WebSocketService _ws;
-  late final AudioWebSocketRecorder _audio;
-
-  bool _isConnecting = true;
+  late final TextEditingController _titleController;
 
   @override
   void initState() {
     super.initState();
-    _ws = WebSocketService();
-    _audio = AudioWebSocketRecorder(ws: _ws);
-
-    _connectToServer();
-  }
-
-  Future<bool> isInternetAvailable() async {
-    try {
-      final result = await InternetAddress.lookup(
-        'google.com',
-      ).timeout(const Duration(seconds: 3));
-      return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
-    } catch (_) {
-      return false;
-    }
-  }
-
-  void _showDialog({required String title, required String content}) {
-    showDialog(
-      context: context,
-      builder:
-          (_) => AlertDialog(
-            title: Text(title),
-            content: Text(content),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('확인'),
-              ),
-            ],
-          ),
-    );
-  }
-
-  Future<void> _connectToServer() async {
-    final hasInternet = await isInternetAvailable();
-
-    if (!hasInternet) {
-      if (mounted) {
-        _showDialog(
-          title: '인터넷 연결 없음',
-          content: '인터넷이 연결되어 있지 않습니다.\n연결 후 다시 시도해주세요.',
-        );
-      }
-      return;
-    }
-
-    try {
-      await _ws.connect('ws://211.188.55.88:8085');
-      debugPrint('✅ 서버 연결 성공');
-    } catch (e) {
-      debugPrint('❌ WebSocket 연결 실패: $e');
-      if (mounted) {
-        _showRetryDialog(); // ✅ 실패하면 retry 팝업 띄우기
-      }
-    } finally {
-      if (mounted) setState(() => _isConnecting = false);
-    }
-  }
-
-  void _showRetryDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder:
-          (_) => AlertDialog(
-            title: const Text('서버 연결 실패'),
-            content: const Text('서버가 꺼져있거나 연결할 수 없습니다.\n다시 시도하시겠어요?'),
-            actions: [
-              TextButton(
-                onPressed: () async {
-                  Navigator.of(context).pop(); // 팝업 닫기
-
-                  await _connectToServer(); // ✅ 다시 연결 시도!
-                },
-                child: const Text('다시 시도'),
-              ),
-            ],
-          ),
-    );
+    _titleController = TextEditingController();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final vm = context.read<VisitUploadViewModel>();
+      _titleController.text = vm.title;
+    });
   }
 
   @override
   void dispose() {
-    // 혹시나 현재 화면에서 dispose시 정리하고 싶으면
-    _audio.dispose();
-    _ws.disconnect();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<VisitUploadViewModel>().resetTitle();
+      }
+    });
+    _titleController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final responsive = Responsive(context);
-    final TextEditingController _titleController = TextEditingController();
+    final vm = context.watch<VisitUploadViewModel>();
 
     return Scaffold(
       backgroundColor: AppColors().background,
       body: SafeArea(
-        child: Column(
-          children: [
-            const DefaultBackAppBar(title: '실시간 대화'),
-            Expanded(
-              child: Center(
-                child: SingleChildScrollView(
-                  physics: const BouncingScrollPhysics(),
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: responsive.paddingHorizontal,
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        SizedBox(height: responsive.sectionSpacing * 2),
-                        Text(
-                          '실시간 자막을 시작합니다.',
-                          style: TextStyle(
-                            color: Colors.black,
-                            fontSize: responsive.fontXL,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          textAlign: TextAlign.center,
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: responsive.paddingHorizontal,
+          ),
+          child: Column(
+            children: [
+              const DefaultBackAppBar(title: '실시간 대화'),
+              Expanded(
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        '실시간 자막을 시작합니다.',
+                        style: TextStyle(
+                          color: Colors.black,
+                          fontSize: responsive.fontXL,
+                          fontWeight: FontWeight.bold,
                         ),
-                        SizedBox(height: responsive.itemSpacing),
-                        Text(
-                          '민원 내용을 자막으로 안내해드릴게요.',
-                          style: TextStyle(
-                            color: const Color(0xFFB3A5A5),
-                            fontSize: responsive.fontBase,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          textAlign: TextAlign.center,
+                        textAlign: TextAlign.center,
+                      ),
+                      SizedBox(height: responsive.itemSpacing),
+                      Text(
+                        '민원 내용을 자막으로 안내해드릴게요.',
+                        style: TextStyle(
+                          color: const Color(0xFFB3A5A5),
+                          fontSize: responsive.fontBase,
+                          fontWeight: FontWeight.bold,
                         ),
-                        SizedBox(height: responsive.sectionSpacing * 3),
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppColors().primary.withOpacity(0.2),
-                                blurRadius: 10,
-                                spreadRadius: 3,
-                                offset: const Offset(0, 2),
+                        textAlign: TextAlign.center,
+                      ),
+                      SizedBox(height: responsive.sectionSpacing * 2.5),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors().primary.withOpacity(0.2),
+                              blurRadius: 10,
+                              spreadRadius: 3,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Text(
+                              'STT 제목을 입력해주세요',
+                              style: TextStyle(
+                                color: AppColors().primary,
+                                fontSize: responsive.fontBase,
+                                fontWeight: FontWeight.bold,
                               ),
-                            ],
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Center(
-                                child: Text(
-                                  'STT 제목을 입력해주세요',
-                                  style: TextStyle(
-                                    color: AppColors().primary,
-                                    fontSize: responsive.fontBase,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                            ),
+                            SizedBox(height: responsive.itemSpacing),
+                            TextField(
+                              controller: _titleController,
+                              onChanged: vm.setTitle,
+                              style: const TextStyle(color: Colors.black87),
+                              decoration: InputDecoration(
+                                hintText: '예: 노인 민원 자막 안내',
+                                hintStyle: const TextStyle(
+                                  color: Color(0xFFB3A5A5),
+                                ),
+                                prefixIcon: const Icon(
+                                  Icons.edit_note_rounded,
+                                  color: Color(0xFFB3A5A5),
+                                ),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                  horizontal: 16,
+                                ),
+                                filled: true,
+                                fillColor: const Color(0xFFF9F9F9),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide.none,
                                 ),
                               ),
-                              SizedBox(height: responsive.itemSpacing),
-
-                              // 입력 필드
-                              TextField(
-                                controller: _titleController,
-                                style: const TextStyle(color: Colors.black87),
-                                decoration: InputDecoration(
-                                  hintText: '예: 노인 민원 자막 안내',
-                                  hintStyle: const TextStyle(
-                                    color: Color(0xFFB3A5A5),
-                                  ),
-                                  prefixIcon: const Icon(
-                                    Icons.edit_note_rounded,
-                                    color: Color(0xFFB3A5A5),
-                                  ),
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    vertical: 16,
-                                    horizontal: 16,
-                                  ),
-                                  filled: true,
-                                  fillColor: const Color(0xFFF9F9F9),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    borderSide: BorderSide.none,
-                                  ),
-                                ),
+                            ),
+                            SizedBox(height: responsive.itemSpacing * 0.7),
+                            Text(
+                              '입력하지 않으면 기본 제목으로 저장됩니다.',
+                              style: TextStyle(
+                                fontSize: responsive.fontSmall,
+                                color: Colors.grey,
                               ),
-
-                              SizedBox(height: responsive.itemSpacing * 0.7),
-
-                              // 안내 문구
-                              Center(
-                                child: Text(
-                                  '입력하지 않으면 기본 제목으로 저장됩니다.',
-                                  style: TextStyle(
-                                    fontSize: responsive.fontSmall,
-                                    color: Colors.grey,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
-
-                        SizedBox(height: responsive.sectionSpacing * 2),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
+
       bottomNavigationBar: Padding(
         padding: EdgeInsets.only(bottom: responsive.paddingHorizontal),
         child: BottomOneButton(
           buttonText: '시작하기',
           onButtonTap: () async {
-            if (!_ws.isConnected) {
+            final title =
+                vm.title.trim().isEmpty ? '구청 민원 응대기록' : vm.title.trim();
+            try {
+              final result = await vm.uploadSttTitle(title);
+              final reportId = result['reportid'];
+              if (reportId == null) {
+                throw Exception('서버 응답에 reportid가 없습니다.');
+              }
+
+              debugPrint('[✅ STT 제목 업로드 성공 / reportid: $reportId]');
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => VisitProcess(reportId: reportId),
+                ),
+              );
+            } catch (e) {
               showDialog(
                 context: context,
                 builder:
                     (_) => AlertDialog(
-                      title: const Text('연결 오류'),
-                      content: const Text('서버에 연결되지 않았습니다.\n다시 시도해주세요.'),
+                      title: const Text('오류'),
+                      content: Text(e.toString()),
                       actions: [
                         TextButton(
                           onPressed: () => Navigator.of(context).pop(),
-                          child: const Text('다시 시도'),
+                          child: const Text('확인'),
                         ),
                       ],
                     ),
               );
-              return;
-            }
-
-            try {
-              await _audio.initRecorder();
-              await _audio.startRecording();
-              if (!mounted) return;
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => VisitProcess(ws: _ws, audio: _audio),
-                ),
-              );
-            } catch (e) {
-              debugPrint('[Audio Error] $e');
-              if (e.toString().contains('마이크 권한이 없습니다')) {
-                // 📢 마이크 권한 거부 팝업 띄우기
-                showDialog(
-                  context: context,
-                  builder:
-                      (_) => AlertDialog(
-                        title: const Text('마이크 권한 필요'),
-                        content: const Text(
-                          '마이크 권한이 허용되지 않았습니다.\n설정에서 마이크 접근을 허용해주세요.',
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () {
-                              Navigator.of(context).pop();
-                            },
-                            child: const Text('확인'),
-                          ),
-                        ],
-                      ),
-                );
-              }
             }
           },
         ),

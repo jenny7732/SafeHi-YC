@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:safehi_yc/main_screen.dart';
+import 'package:safehi_yc/provider/nav/bottom_nav_provider.dart';
 import 'package:safehi_yc/styles/app_colors.dart';
 import 'package:safehi_yc/util/responsive.dart';
 import 'package:safehi_yc/view/signup/terms_agreement_page.dart';
@@ -38,6 +39,7 @@ class _LoginPageState extends State<LoginPage> {
     if (result['success']) {
       // ✅ Navigator는 마지막에만!
       Future.microtask(() {
+        context.read<BottomNavProvider>().setIndex(0); // 홈 인덱스로 명시 설정
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => const MainScreen()),
@@ -83,7 +85,7 @@ class _LoginPageState extends State<LoginPage> {
                 ),
                 SizedBox(height: responsive.itemSpacing),
                 Text(
-                  '양청구청에 오신 걸 환영합니다.',
+                  '양천구청에 오신 걸 환영합니다.',
                   style: TextStyle(
                     fontSize: responsive.fontBase,
                     fontWeight: FontWeight.w600,

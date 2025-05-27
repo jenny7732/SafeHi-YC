@@ -1,5 +1,5 @@
+import 'package:safehi_yc/model/stt_result_model.dart';
 import 'package:safehi_yc/model/visit_detail_model.dart';
-import 'package:safehi_yc/model/visit_model.dart';
 import 'package:safehi_yc/service/visit_service.dart';
 
 class VisitRepository {
@@ -7,18 +7,22 @@ class VisitRepository {
 
   VisitRepository({required this.service});
 
-  /// 오늘 방문 목록
-  Future<List<Visit>> getTodayVisits() => VisitService.fetchTodayVisits();
-
-  /// 특정 날짜 방문 목록
-  Future<List<Visit>> getVisitsByDate(String date) =>
-      VisitService.fetchVisitsByDate(date);
-
-  // Future<Visit> getVisitDetail(int visitId) =>
-  //     VisitService.fetchVisitDetail(visitId);
-
   /// 방문 상세
   Future<VisitDetail> getVisitDetail(int reportId) {
     return service.getTargetDetail(reportId);
+  }
+
+  final VisitService _service = VisitService();
+
+  Future<Map<String, dynamic>> uploadSttTitle(String title) {
+    return _service.uploadSttTitle(title);
+  }
+
+  Future<List<SttResult>> getSttResultList() {
+    return service.fetchSttResultList();
+  }
+
+  Future<String> getConversationText(int reportId) {
+    return service.getConversationText(reportId);
   }
 }

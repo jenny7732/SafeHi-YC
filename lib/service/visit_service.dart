@@ -48,60 +48,93 @@ class VisitService {
 
   // stt 제목 post 요청
   Future<Map<String, dynamic>> uploadSttTitle(String title) async {
-    final url = Uri.parse('$baseUrl/db/yangchun_stt_upload');
-    final headers = await buildAuthHeaders();
+    // final url = Uri.parse('$baseUrl/db/yangchun_stt_upload');
+    // final headers = await buildAuthHeaders();
 
-    final body = {'stt_file_name': title};
+    // final body = {'stt_file_name': title};
 
-    final response = await http.post(
-      url,
-      headers: headers,
-      body: jsonEncode(body),
-    );
+    // final response = await http.post(
+    //   url,
+    //   headers: headers,
+    //   body: jsonEncode(body),
+    // );
 
-    final result = jsonDecode(utf8.decode(response.bodyBytes));
-    debugPrint('[STT 제목 업로드 응답] $result');
+    // final result = jsonDecode(utf8.decode(response.bodyBytes));
+    // debugPrint('[STT 제목 업로드 응답] $result');
 
-    if (response.statusCode != 200 || result['status'] != true) {
-      throw Exception(result['msg'] ?? '서버 오류 발생');
-    }
+    // if (response.statusCode != 200 || result['status'] != true) {
+    //   throw Exception(result['msg'] ?? '서버 오류 발생');
+    // }
 
-    return result; // ✅ 변경된 부분
+    // return result; // ✅ 변경된 부분
+
+    //더미 데이터
+    debugPrint('[STT 제목 업로드 요청] $title');
+
+    // ✅ 더미 응답
+    await Future.delayed(const Duration(milliseconds: 500));
+    return {"status": true, "msg": "STT 제목 업로드 성공", "uploaded_title": title};
   }
 
   Future<List<SttResult>> fetchSttResultList() async {
-    final headers = await buildAuthHeaders();
-    final url = Uri.parse('$baseUrl/db/yangchun_getResultList');
+    // final headers = await buildAuthHeaders();
+    // final url = Uri.parse('$baseUrl/db/yangchun_getResultList');
 
-    final response = await http.get(url, headers: headers);
-    debugPrint('response body: ${response.body}');
+    // final response = await http.get(url, headers: headers);
+    // debugPrint('response body: ${response.body}');
 
-    if (response.statusCode != 200) {
-      throw Exception('STT 결과 리스트 요청 실패: ${response.statusCode}');
-    }
+    // if (response.statusCode != 200) {
+    //   throw Exception('STT 결과 리스트 요청 실패: ${response.statusCode}');
+    // }
 
-    final decoded = jsonDecode(utf8.decode(response.bodyBytes));
+    // final decoded = jsonDecode(utf8.decode(response.bodyBytes));
 
-    // ✅ 응답이 리스트 그 자체임
-    if (decoded is! List) {
-      throw Exception('예상하지 못한 응답 형식입니다. List가 아님');
-    }
+    // // ✅ 응답이 리스트 그 자체임
+    // if (decoded is! List) {
+    //   throw Exception('예상하지 못한 응답 형식입니다. List가 아님');
+    // }
 
-    return decoded.map((e) => SttResult.fromJson(e)).toList();
+    // return decoded.map((e) => SttResult.fromJson(e)).toList();
+
+    // 더미데이터
+    debugPrint('[STT 결과 리스트 요청]');
+
+    // ✅ 더미 응답
+    await Future.delayed(const Duration(milliseconds: 500));
+
+    return List.generate(5, (index) {
+      return SttResult.fromJson({
+        "reportid": index + 1,
+        "stt_file_name": "입력한 내용",
+        "startTime": "2025-04-03 10:00",
+      });
+    });
   }
 
   Future<String> getConversationText(int reportId) async {
-    final url = Uri.parse(
-      '$baseUrl/db/getYangChunConverstationSTTtxt/$reportId',
-    );
-    final headers = await buildAuthHeaders();
+    // final url = Uri.parse(
+    //   '$baseUrl/db/getYangChunConverstationSTTtxt/$reportId',
+    // );
+    // final headers = await buildAuthHeaders();
 
-    final response = await http.get(url, headers: headers);
+    // final response = await http.get(url, headers: headers);
 
-    if (response.statusCode == 200) {
-      return response.body;
-    } else {
-      throw Exception('상담 텍스트 불러오기 실패: ${response.statusCode}');
-    }
+    // if (response.statusCode == 200) {
+    //   return response.body;
+    // } else {
+    //   throw Exception('상담 텍스트 불러오기 실패: ${response.statusCode}');
+    // }
+
+    // 더미 데이터
+    debugPrint('[상담 텍스트 요청] reportId: $reportId');
+
+    // ✅ 더미 응답
+    await Future.delayed(const Duration(milliseconds: 500));
+
+    return '''
+이곳은 더미 STT 텍스트입니다.
+사용자가 녹음한 대화 내용을 서버에서 txt 파일로 내려주는 자리입니다.
+여기에 임의의 문자열을 넣어 테스트하세요.
+''';
   }
 }

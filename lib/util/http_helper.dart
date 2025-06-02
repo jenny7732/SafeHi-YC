@@ -4,8 +4,10 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 Future<Map<String, String>> buildAuthHeaders({
   Map<String, String>? extraHeaders,
 }) async {
-  final storage = FlutterSecureStorage();
-  final token = await storage.read(key: 'accessToken');
+  // final storage = FlutterSecureStorage();
+  // final token = await storage.read(key: 'accessToken');
+
+  final token = 'dummy-token'; // ✅ 테스트용 토큰
 
   debugPrint('[AUTH 헤더] $token');
 

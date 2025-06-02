@@ -184,30 +184,30 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                       ],
                     ),
-                    Row(
-                      children: [
-                        TextButton(
-                          onPressed: () {},
-                          child: Text(
-                            '아이디 찾기',
-                            style: TextStyle(
-                              fontSize: responsive.fontSmall,
-                              color: Colors.grey,
-                            ),
-                          ),
-                        ),
-                        TextButton(
-                          onPressed: () {},
-                          child: Text(
-                            '비밀번호 찾기',
-                            style: TextStyle(
-                              fontSize: responsive.fontSmall,
-                              color: Colors.grey,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                    // Row(
+                    //   children: [
+                    //     TextButton(
+                    //       onPressed: () {},
+                    //       child: Text(
+                    //         '아이디 찾기',
+                    //         style: TextStyle(
+                    //           fontSize: responsive.fontSmall,
+                    //           color: Colors.grey,
+                    //         ),
+                    //       ),
+                    //     ),
+                    //     TextButton(
+                    //       onPressed: () {},
+                    //       child: Text(
+                    //         '비밀번호 찾기',
+                    //         style: TextStyle(
+                    //           fontSize: responsive.fontSmall,
+                    //           color: Colors.grey,
+                    //         ),
+                    //       ),
+                    //     ),
+                    //   ],
+                    // ),
                   ],
                 ),
                 SizedBox(height: responsive.sectionSpacing),

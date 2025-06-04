@@ -60,7 +60,7 @@ class UserService {
       "msg": "테스트용 로그인 성공",
       "user": {
         "user_id": 4,
-        "name": "yujin",
+        "name": "홍길동",
         "phone_number": "01043830203",
         "email": "jenny7732@naver.com",
         "birthdate": "2002-02-02T15:00:00.000Z",

@@ -73,7 +73,12 @@ class VisitService {
 
     // ✅ 더미 응답
     await Future.delayed(const Duration(milliseconds: 500));
-    return {"status": true, "msg": "STT 제목 업로드 성공", "uploaded_title": title};
+    return {
+      "status": true,
+      "msg": "STT 제목 업로드 성공",
+      "uploaded_title": title,
+      "reportid": 1, // 더미 reportid 추가
+    };
   }
 
   Future<List<SttResult>> fetchSttResultList() async {

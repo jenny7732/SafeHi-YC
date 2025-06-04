@@ -1,0 +1,7 @@
+flutter_native_splash:
+  color: "#FFFBF7" # 배경색
+  image: assets/images/logo.png # 로고 이미지 경로
+  android: true
+  ios: true
+  android_gravity: center
+  ios_content_mode: center
